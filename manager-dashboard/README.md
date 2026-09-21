@@ -11,27 +11,36 @@ This is an isolated, production-ready, standalone **Manager Dashboard** module f
 ```text
 manager-dashboard/
 ├── backend/
-│   ├── app.py                          # Flask application entrypoint (runs on port 5001)
+│   ├── app.py                          # Flask entrypoint with Dashboard, Employee, Category, & Product routes
 │   ├── config.py                       # Configuration & environment variable loader
 │   ├── extensions.py                   # PostgreSQL connection pool & schema utilities
 │   ├── requirements.txt                # Python backend dependencies
-│   ├── .env.example                    # Environment variable template
+│   ├── test_management_modules.py     # Automated test suite for Employee, Category, & Product APIs
 │   ├── middleware/
-│   │   ├── __init__.py
-│   │   └── auth_middleware.py          # Manager/Owner JWT role authorization
+│   │   └── auth_middleware.py          # Manager/Owner role authorization
 │   ├── routes/
-│   │   ├── __init__.py
-│   │   └── manager_dashboard_routes.py # 10 REST API endpoints
+│   │   ├── manager_dashboard_routes.py # 10 Dashboard REST API endpoints
+│   │   ├── employee_routes.py          # Employee Management CRUD & status endpoints
+│   │   ├── category_routes.py          # Category Management CRUD & count endpoints
+│   │   └── product_routes.py           # Product Management CRUD, inventory linkage, & filters
 │   └── services/
-│       ├── __init__.py
-│       └── manager_dashboard_service.py# Direct Supabase SQL query services
+│       ├── manager_dashboard_service.py# Dashboard Supabase SQL query services
+│       ├── employee_service.py         # Employee DB queries & activity history
+│       ├── category_service.py         # Category DB queries & integrity checks
+│       └── product_service.py          # Product & Inventory DB queries, filters, & transactions
 ├── frontend/
 │   ├── index.html                      # Manager Console UI
+│   ├── employees.html                  # Separate Employee Management page
+│   ├── categories.html                 # Separate Category Management page
+│   ├── products.html                   # Separate Product Management page
 │   ├── css/
 │   │   └── manager-dashboard.css       # Custom design system & responsive styling
 │   └── js/
 │       ├── api.js                      # Authenticated API client wrapper
-│       └── manager-dashboard.js        # UI controller, charts & real-time sync
+│       ├── manager-dashboard.js        # UI controller for main dashboard
+│       ├── employees.js                # Separate controller for Employee Management
+│       ├── categories.js               # Separate controller for Category Management
+│       └── products.js                 # Separate controller for Product Management
 ├── sql/
 │   └── dashboard_queries.sql           # Documentation of all SQL queries used
 └── README.md                           # Comprehensive documentation & integration guide
@@ -107,6 +116,33 @@ All endpoints return JSON in the format:
 | `GET` | `/api/manager/dashboard/suppliers` | Active suppliers count and directory |
 | `GET` | `/api/manager/dashboard/notifications` | Manager alerts and unread counts |
 | `PATCH` | `/api/manager/dashboard/notifications/<id>/read` | Mark specific notification as read |
+
+### Employee Management APIs
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/api/manager/employees/` | List employees (filters: `search`, `status`) with PO & Tx counts |
+| `GET` | `/api/manager/employees/<id>` | Full employee profile with assigned POs and recent activity |
+| `POST` | `/api/manager/employees/` | Create employee (`username`, `email`, `password`, `status`) |
+| `PUT` | `/api/manager/employees/<id>` | Update employee (`username`, `email`, `status`) |
+| `PATCH`| `/api/manager/employees/<id>/status`| Toggle active/inactive status |
+
+### Category Management APIs
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/api/manager/categories/` | List categories with product counts (filter: `search`) |
+| `GET` | `/api/manager/categories/<id>` | Get category details with assigned products |
+| `POST` | `/api/manager/categories/` | Create new category (duplicate name check) |
+| `PUT` | `/api/manager/categories/<id>` | Update category name and description |
+| `DELETE`| `/api/manager/categories/<id>`| Foreign-key safe delete (blocks if products exist) |
+
+### Product Management APIs
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/api/manager/products/` | List products (`search`, `category_id`, `status`, `sort_by`) |
+| `GET` | `/api/manager/products/<id>` | Product profile with live stock quantity and threshold |
+| `POST` | `/api/manager/products/` | Create product and initialize Inventory stock record |
+| `PUT` | `/api/manager/products/<id>` | Update product name, category, SKU, price, reorder level |
+| `PATCH`| `/api/manager/products/<id>/status`| Toggle product Active/Inactive |
 
 ---
 

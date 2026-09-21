@@ -26,6 +26,24 @@ def health_check():
     }), 200 if db_connected else 503
 
 
+@manager_dashboard_bp.route("/overview", methods=["GET"])
+@manager_required()
+def get_dashboard_overview():
+    """Endpoint: Complete consolidated dashboard state in a single DB query batch."""
+    try:
+        data = service.get_full_dashboard_data()
+        return jsonify({
+            "success": True,
+            "data": data
+        }), 200
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": "Database error",
+            "message": f"Failed to retrieve dashboard overview: {str(e)}"
+        }), 500
+
+
 @manager_dashboard_bp.route("/summary", methods=["GET"])
 @manager_required()
 def get_summary():

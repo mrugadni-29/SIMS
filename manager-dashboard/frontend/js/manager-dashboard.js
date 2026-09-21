@@ -437,7 +437,62 @@ async function loadAllDashboardData() {
   if (refreshBtn) refreshBtn.classList.add("spinning");
 
   try {
-    // Parallel fetch of all dashboard endpoints
+    // 1. Try ultra-fast consolidated overview API (single DB connection)
+    const overviewRes = await DashboardAPI.getOverview();
+    if (overviewRes && overviewRes.success && overviewRes.data) {
+      const data = overviewRes.data;
+
+      if (data.summary) {
+        state.summary = data.summary;
+        try { renderSummary(data.summary); } catch (e) { console.error("renderSummary error:", e); }
+      }
+      if (data.inventory) {
+        state.inventory = data.inventory;
+        try { renderInventory(data.inventory); } catch (e) { console.error("renderInventory error:", e); }
+      }
+      if (data.procurement) {
+        state.procurement = data.procurement;
+        try { renderProcurement(data.procurement); } catch (e) { console.error("renderProcurement error:", e); }
+      }
+      if (data.pending_actions) {
+        state.pendingActions = data.pending_actions;
+        try { renderPendingActions(data.pending_actions); } catch (e) { console.error("renderPendingActions error:", e); }
+      }
+      if (data.low_stock) {
+        state.lowStock = data.low_stock;
+        try { renderLowStock(data.low_stock); } catch (e) { console.error("renderLowStock error:", e); }
+      }
+      if (data.purchase_orders) {
+        state.purchaseOrders = data.purchase_orders;
+        try { renderPurchaseOrders(data.purchase_orders); } catch (e) { console.error("renderPurchaseOrders error:", e); }
+      }
+      if (data.transactions) {
+        state.transactions = data.transactions;
+        try { renderTransactions(data.transactions); } catch (e) { console.error("renderTransactions error:", e); }
+      }
+      if (data.employees || data.suppliers) {
+        state.employees = data.employees;
+        state.suppliers = data.suppliers;
+        try { renderDirectory(data.employees, data.suppliers); } catch (e) { console.error("renderDirectory error:", e); }
+      }
+      if (data.notifications) {
+        state.notifications = data.notifications;
+        try { renderNotifications(data.notifications); } catch (e) { console.error("renderNotifications error:", e); }
+      }
+
+      // Update timestamp
+      const syncEl = document.getElementById("lastSyncTime");
+      if (syncEl) {
+        syncEl.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      }
+      return;
+    }
+  } catch (overviewErr) {
+    console.warn("Consolidated overview fetch failed, falling back to modular endpoints:", overviewErr);
+  }
+
+  try {
+    // Fallback: Individual endpoints
     const [
       summaryRes,
       inventoryRes,
@@ -462,48 +517,46 @@ async function loadAllDashboardData() {
       DashboardAPI.getNotifications()
     ]);
 
-    // Handle results safely
-    if (summaryRes.status === "fulfilled" && summaryRes.value.success) {
+    if (summaryRes.status === "fulfilled" && summaryRes.value?.success) {
       state.summary = summaryRes.value.data;
-      renderSummary(state.summary);
+      try { renderSummary(state.summary); } catch (e) {}
     }
-    if (inventoryRes.status === "fulfilled" && inventoryRes.value.success) {
+    if (inventoryRes.status === "fulfilled" && inventoryRes.value?.success) {
       state.inventory = inventoryRes.value.data;
-      renderInventory(state.inventory);
+      try { renderInventory(state.inventory); } catch (e) {}
     }
-    if (procurementRes.status === "fulfilled" && procurementRes.value.success) {
+    if (procurementRes.status === "fulfilled" && procurementRes.value?.success) {
       state.procurement = procurementRes.value.data;
-      renderProcurement(state.procurement);
+      try { renderProcurement(state.procurement); } catch (e) {}
     }
-    if (actionsRes.status === "fulfilled" && actionsRes.value.success) {
+    if (actionsRes.status === "fulfilled" && actionsRes.value?.success) {
       state.pendingActions = actionsRes.value.data;
-      renderPendingActions(state.pendingActions);
+      try { renderPendingActions(state.pendingActions); } catch (e) {}
     }
-    if (lowStockRes.status === "fulfilled" && lowStockRes.value.success) {
+    if (lowStockRes.status === "fulfilled" && lowStockRes.value?.success) {
       state.lowStock = lowStockRes.value.data;
-      renderLowStock(state.lowStock);
+      try { renderLowStock(state.lowStock); } catch (e) {}
     }
-    if (posRes.status === "fulfilled" && posRes.value.success) {
+    if (posRes.status === "fulfilled" && posRes.value?.success) {
       state.purchaseOrders = posRes.value.data;
-      renderPurchaseOrders(state.purchaseOrders);
+      try { renderPurchaseOrders(state.purchaseOrders); } catch (e) {}
     }
-    if (txRes.status === "fulfilled" && txRes.value.success) {
+    if (txRes.status === "fulfilled" && txRes.value?.success) {
       state.transactions = txRes.value.data;
-      renderTransactions(state.transactions);
+      try { renderTransactions(state.transactions); } catch (e) {}
     }
-    if (empRes.status === "fulfilled" && empRes.value.success) {
+    if (empRes.status === "fulfilled" && empRes.value?.success) {
       state.employees = empRes.value.data;
     }
-    if (supRes.status === "fulfilled" && supRes.value.success) {
+    if (supRes.status === "fulfilled" && supRes.value?.success) {
       state.suppliers = supRes.value.data;
     }
-    renderDirectory(state.employees, state.suppliers);
+    try { renderDirectory(state.employees, state.suppliers); } catch (e) {}
 
-    if (notifRes.status === "fulfilled" && notifRes.value.success) {
-      renderNotifications(notifRes.value.data);
+    if (notifRes.status === "fulfilled" && notifRes.value?.success) {
+      try { renderNotifications(notifRes.value.data); } catch (e) {}
     }
 
-    // Update timestamp
     const syncEl = document.getElementById("lastSyncTime");
     if (syncEl) {
       syncEl.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });

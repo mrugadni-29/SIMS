@@ -3,6 +3,9 @@ from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from config import JWT_SECRET_KEY, PORT, DEBUG
 from routes.manager_dashboard_routes import manager_dashboard_bp
+from routes.employee_routes import employee_bp
+from routes.category_routes import category_bp
+from routes.product_routes import product_bp
 
 
 def create_dashboard_app():
@@ -36,8 +39,11 @@ def create_dashboard_app():
 
     JWTManager(app)
 
-    # Register Manager Dashboard blueprint
+    # Register blueprints
     app.register_blueprint(manager_dashboard_bp)
+    app.register_blueprint(employee_bp)
+    app.register_blueprint(category_bp)
+    app.register_blueprint(product_bp)
 
     @app.route("/")
     def index():
